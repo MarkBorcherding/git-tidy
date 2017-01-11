@@ -1,0 +1,36 @@
+#!/bin/bash
+
+git remote prune origin
+
+local_branches=$( git branch --merged \
+                | grep --invert-match --regexp master --regexp release )
+
+remote_branches=$(   git branch --remote --merged \
+                   | grep --invert-match --regexp master --regexp release \
+                   | grep --regexp 'origin/' \
+                   | sed 's/ origin\///' )
+
+if [[ -z "${local_branches}" && -z "${remote_branches}" ]]; then
+    echo "Nothing to cleanup"
+    exit 0
+fi
+
+echo "Found the following branches that are merged into your current branch:"
+echo "   local: ${local_branches}"
+echo "  remote: ${remote_branches}"
+read -r -p "Delete these branches? [Y]n" yn
+
+case $yn in
+    [Nn]* ) exit;;
+esac
+
+git branch --merged \
+    | grep --invert-match --regexp master --regexp release \
+    | xargs git branch --delete
+
+git branch --remote --merged \
+    | grep --invert-match --regexp master --regexp release \
+    | grep --regexp 'origin/' \
+    | sed 's/ origin\///' \
+    | xargs git push origin --delete
+
