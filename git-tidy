@@ -15,10 +15,13 @@ if [[ -z "${local_branches}" && -z "${remote_branches}" ]]; then
     exit 0
 fi
 
-echo "Found the following branches that are merged into your current branch:"
-echo "   local: ${local_branches}"
-echo "  remote: ${remote_branches}"
-read -r -p "Delete these branches? [Y]n" yn
+echo "Found the following branches that are merged into your current branch."
+echo "  local:"
+echo "$( echo $local_branches | tr ' ' '\n' | sed 's/^/     /g')"
+echo "  origin:"
+echo "$( echo $remote_branches | tr ' ' '\n' | sed 's/^/     /g')"
+echo 
+read -r -p "Delete these branches? [Y]n " yn
 
 case $yn in
     [Nn]* ) exit;;
