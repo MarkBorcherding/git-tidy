@@ -1,39 +1,62 @@
 #!/bin/bash
 
+
+export RESET_COLOR="\033[0m"
+export RED="\033[31m"
+export BRIGHT_RED="\033[91m"
+export BLUE="\033[34m"
+export BRIGHT_BLUE="\033[94m"
+export CYAN="\033[36m"
+export BRIGHT_CYAN="\033[96m"
+
 git remote prune origin
 
-local_branches=$( git branch --merged \
-                | grep --invert-match --regexp master --regexp release )
+local_branches=$(   git branch --format='%(refname:short)' --merged  \
+                  | grep --invert-match \
+                         --regexp 'master$' \
+                         --regexp 'release$' \
+                         --regexp 'qa$' )
 
 remote_branches=$(   git branch --remote --merged \
-                   | grep --invert-match --regexp master --regexp release \
+                   | grep --invert-match --regexp 'origin/master$' --regexp 'origin/release$' --regexp 'origin/qa$' \
                    | grep --regexp 'origin/' \
-                   | sed 's/ origin\///' )
+                   | sed 's+ origin/++' )
 
 if [[ -z "${local_branches}" && -z "${remote_branches}" ]]; then
     echo "Nothing to cleanup"
     exit 0
 fi
 
+lb=$( echo $local_branches | tr ' ' '\n' | sed 's/^/     /g')
+rb=$( echo $remote_branches | tr ' ' '\n' | sed 's/^/     /g')
+
+echo
 echo "Found the following branches that are merged into your current branch."
-echo "  local:"
-echo "$( echo $local_branches | tr ' ' '\n' | sed 's/^/     /g')"
-echo "  origin:"
-echo "$( echo $remote_branches | tr ' ' '\n' | sed 's/^/     /g')"
-echo 
-read -r -p "Delete these branches? [Y]n " yn
+
+if [ -n "${local_branches}" ]; then
+  echo
+  echo -e "${CYAN}  local:"
+  echo -e "${BRIGHT_CYAN}$lb"
+fi
+
+
+if [ -n "${remote_branches}" ]; then
+  echo
+  echo -e "${BLUE}  origin:"
+  echo -e "${BRIGHT_BLUE}$rb"
+fi
+
+echo
+echo -e -n "${RESET_COLOR}Delete these branches? [${BRIGHT_RED}Y${RESET_COLOR}]n "
+read -r yn
 
 case $yn in
-    [Nn]* ) exit;;
+    "" ) ;;
+    [Yy] ) ;;
+    * ) echo -e "\nDoing nothing...have a good day\n"; exit 0;;
 esac
 
-git branch --merged \
-    | grep --invert-match --regexp master --regexp release \
-    | xargs git branch --delete
+[ -n "${local_branches}" ] && git branch --delete ${lb}
 
-git branch --remote --merged \
-    | grep --invert-match --regexp master --regexp release \
-    | grep --regexp 'origin/' \
-    | sed 's/ origin\///' \
-    | xargs git push origin --delete
+[ -n "${remote_branches}" ] && git push origin --delete ${rb}
 
