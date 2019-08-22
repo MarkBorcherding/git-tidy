@@ -11,14 +11,16 @@ export BRIGHT_CYAN="\033[96m"
 
 git remote prune origin
 
+SPECIAL_BRANCHES="${GIT_TIDY_SPECIAL_BRANCHES:-"master|release|qa|demo"}"
+
 local_branches=$(   git branch --format='%(refname:short)' --merged  \
                   | grep --invert-match \
-                         --regexp 'master$' \
-                         --regexp 'release$' \
-                         --regexp 'qa$' )
+                         --extended-regexp "(${SPECIAL_BRANCHES})$" \
+                )
 
 remote_branches=$(   git branch --remote --merged \
-                   | grep --invert-match --regexp 'origin/master$' --regexp 'origin/release$' --regexp 'origin/qa$' \
+                   | grep --invert-match \
+                          --extended-regexp "origin/(${SPECIAL_BRANCHES})$" \
                    | grep --regexp 'origin/' \
                    | sed 's+ origin/++' )
 
